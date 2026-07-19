@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Tracker Pro</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --primary: #2ec4b6;
+            --secondary: #ff9f1c;
+            --danger: #e11d48;
+            --dark: #1a1a1a;
+            --gray: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--dark); padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 480px; background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; }
+        
+        h1 { font-size: 24px; text-align: center; margin-bottom: 20px; color: var(--dark); }
+        fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 15px; background: var(--bg-color); }
+        legend { font-size: 13px; font-weight: bold; padding: 0 5px; color: var(--gray); }
+        
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .form-group { display: flex; flex-direction: column; flex: 1; }
+        label { font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--gray); }
+        input { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; width: 100%; }
+        input:focus { border-color: var(--primary); outline: none; }
+        
+        button { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: #24a89d; }
+        .btn-secondary { background: #e2e8f0; color: var(--dark); padding: 6px 12px; font-size: 12px; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-purge { background: #4b5563; color: white; }
+        .btn-purge:hover { background: #374151; }
+
+        .ledger-box { max-height: 140px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background: white; margin-top: 5px; }
+        .ledger-item { display: flex; justify-content: space-between; padding: 8px 12px; font-family: monospace; font-size: 13px; border-bottom: 1px solid var(--border); }
+        .ledger-item:last-child { border-bottom: none; }
+
+        .metric-group { margin-bottom: 12px; }
+        .metric-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+        .progress-bar { width: 100%; height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s, background-color 0.3s; }
+        
+        .calorie-box { text-align: center; margin-top: 15px; padding: 10px; border-radius: 6px; background: #eff6ff; color: #1e3a8a; font-size: 18px; font-weight: bold; }
+        .actions { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .actions button { flex: 1; font-size: 12px; padding: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Macro Counter & Planner</h1>
+
+    <!-- TARGET DAILY GOALS -->
+    <fieldset>
+        <legend> Target Daily Allocations </legend>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="pGoal">Protein (g)</label>
+                <input type="text" id="pGoal" value="150">
+            </div>
+            <div class="form-group">
+                <label for="cGoal">Carbs (g)</label>
+                <input type="text" id="cGoal" value="200">
+            </div>
+            <button class="btn-secondary" onclick="safeUpdateGoals()" style="margin-top: 18px;">Update</button>
+        </div>
+    </fieldset>
+
+    <!-- LOG FOOD ENTRY -->
+    <fieldset>
+        <legend> Log Food Entry </legend>
+        <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+                <label for="foodName">Food Label Name</label>
+                <input type="text" id="foodName" placeholder="e.g., Chicken Breast">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="proteinInput">Protein (g)</label>
+                <input type="text" id="proteinInput" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label for="carbsInput">Carbs (g)</label>
+                <input type="text" id="carbsInput" placeholder="0">
+            </div>
+        </div>
+        <button class="btn-primary" onclick="safeAddFoodItem()">Log Food Item (Enter)</button>
+    </fieldset>
+
+    <!-- MEAL LEDGER -->
+    <fieldset>
+        <legend> Today's Meal Ledger </legend>
+        <div class="ledger-box" id="ledgerBox">
+            <!-- Dynamic entries inject here -->
+        </div>
+    </fieldset>
+
+    <!-- ANALYTICS MATRIX -->
+    <fieldset>
+        <legend> Analytics Matrix </legend>
+        <div class="metric-group">
+            <div class="metric-header">
+                <span id="proteinStatus">Protein: 0.0g / 150.0g</span>
+            </div>
+            <div class="progress-bar"><div id="proteinFill" class="progress-fill"></div></div>
+        </div>
+        <div class="metric-group">
+            <div class="metric-header">
+                <span id="carbsStatus">Carbohydrates: 0.0g / 200.0g</span>
+            </div>
+            <div class="progress-bar"><div id="carbsFill" class="progress-fill"></div></div>
+        </div>
+        <div class="calorie-box" id="calorieBox">Calculated Calories: 0 kcal</div>
+    </fieldset>
+
+    <div class="actions">
+        <button class="btn-danger" onclick="safeDeleteSelected()">Delete Selection</button>
+        <button class="btn-purge" onclick="safePurgeSystem()">Purge System Log</button>
+    </div>
+</div>
+
+<script>
+    // Application State File System Mirror
+    let state = {
+        goal_protein: 150.0,
+        goal_carbs: 200.0,
+        logged_items: []
+    };
+    
+    let selectedIndex = null;
+
+    // Load state immediately on system boot
+    window.onload = function() {
+        const localData = localStorage.getItem('nutrition_data');
+        if (localData) {
+            try {
+                state = JSON.parse(localData);
+            } catch (e) {
+                alert("Corrupt local storage signature discovered. Resetting logs.");
+                syncStateToDisk();
+            }
+        }
+        document.getElementById('pGoal').value = state.goal_protein;
+        document.getElementById('cGoal').value = state.goal_carbs;
+        
+        // Form execution listener
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') safeAddFoodItem();
+        });
+        
+        recalculateAndRefreshViews();
+    };
+
+    function validateAndParseInput(value, fieldIdentity) {
+        let cleanString = value.trim();
+        if (!cleanString) return 0.0;
+        
+        let parsedValue = Number(cleanString);
+        if (isNaN(parsedValue)) {
+            throw new Error(`Value entered for '${fieldIdentity}' must be a standard numeric number.`);
+        }
+        if (parsedValue < 0.0) {
+            throw new Error(`The value for '${fieldIdentity}' cannot drop below zero.`);
+        }
+        if (parsedValue > 1500.0) {
+            throw new Error(`The input for '${fieldIdentity}' looks unsafely high (>1500g).`);
+        }
+        return parsedValue;
+    }
+
+    function safeUpdateGoals() {
+        try {
+            let pGoal = validateAndParseInput(document.getElementById('pGoal').value, "Protein Goal");
+            let cGoal = validateAndParseInput(document.getElementById('cGoal').value, "Carb Goal");
+            
+            if (pGoal <= 0 || cGoal <= 0) {
+                alert("Daily tracking targets must evaluate greater than 0g.");
+                return;
+            }
+            
+            state.goal_protein = pGoal;
+            state.goal_carbs = cGoal;
+            syncStateToDisk();
+            recalculateAndRefreshViews();
+            alert("Daily target profiles updated successfully.");
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    function safeAddFoodItem() {
+        let foodLabel = document.getElementById('foodName').value.trim();
+        if (!foodLabel) foodLabel = "Unlabelled Logged Entry";
+
+        try {
+            let proteinVal = validateAndParseInput(document.getElementById('proteinInput').value, "Meal Protein Amount");
+            let carbsVal = validateAndParseInput(document.getElementById('carbsInput').value, "Meal Carb Amount");
+
+            if (proteinVal === 0 && carbsVal === 0) {
+                alert("Empty entry omitted. Enter macro specs before logging.");
+                return;
+            }
+
+            state.logged_items.push({ name: foodLabel, protein: proteinVal, carbs: carbsVal });
+            syncStateToDisk();
+            recalculateAndRefreshViews();
+
+            // Flush inputs
+            document.getElementById('foodName').value = '';
+            document.getElementById('proteinInput').value = '';
+            document.getElementById('carbsInput').value = '';
+            document.getElementById('foodName').focus();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    function selectItem(index, element) {
+        selectedIndex = index;
+        document.querySelectorAll('.ledger-item').forEach(el => el.style.background = 'white');
+        element.style.background = '#e0f2fe';
+    }
+
+    function safeDeleteSelected() {
+        if (selectedIndex === null) {
+            alert("Please click a row in the ledger panel first to highlight it for deletion.");
+            return;
+        }
+        state.logged_items.splice(selectedIndex, 1);
+        selectedIndex = null;
+        syncStateToDisk();
+        recalculateAndRefreshViews();
+    }
+
+    function recalculateAndRefreshViews() {
+        const ledgerBox = document.getElementById('ledgerBox');
+        ledgerBox.innerHTML = '';
+        
+        let totalProtein = 0;
+        let totalCarbs = 0;
+
+        state.logged_items.forEach((item, idx) => {
+            totalProtein += item.protein;
+            totalCarbs += item.carbs;
+            
+            let row = document.createElement('div');
+            row.className = 'ledger-item';
+            row.onclick = function() { selectItem(idx, this); };
+            
+            let truncatedName = item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name;
+            row.innerHTML = `<span>${truncatedName.padEnd(18, '\u00A0')}</span><span>P: ${item.protein.toFixed(1).padStart(5, '\u00A0')}g | C: ${item.carbs.toFixed(1).padStart(5, '\u00A0')}g</span>`;
+            ledgerBox.appendChild(row);
+        });
+
+        let derivedCalories = (totalProtein * 4.0) + (totalCarbs * 4.0);
+        
+        document.getElementById('proteinStatus').innerText = `Protein: ${totalProtein.toFixed(1)}g / ${state.goal_protein.toFixed(1)}g`;
+        document.getElementById('carbsStatus').innerText = `Carbohydrates: ${totalCarbs.toFixed(1)}g / ${state.goal_carbs.toFixed(1)}g`;
+        document.getElementById('calorieBox').innerText = `Calculated Calories: ${Math.round(derived_calories)} kcal`;
+
+        let pPct = Math.min((totalProtein / state.goal_protein) * 100, 100) || 0;
+        let cPct = Math.min((totalCarbs / state.goal_carbs) * 100, 100) || 0;
+
+        const pFill = document.getElementById('proteinFill');
+        const cFill = document.getElementById('carbsFill');
+        
+        pFill.style.width = `${pPct}%`;
+        cFill.style.width = `${cPct}%`;
+
+        // Style safety alerts dynamically when goals are breached
+        pFill.style.backgroundColor = pPct >= 100 ? 'var(--secondary)' : 'var(--primary)';
+        cFill.style.backgroundColor = cPct >= 100 ? 'var(--secondary)' : 'var(--primary)';
+    }
+
+    function syncStateToDisk() {
+        localStorage.setItem('nutrition_data', JSON.stringify(state));
+    }
+
+    function safePurgeSystem() {
+        if (confirm("Permanently wipe database storage arrays and logs?")) {
+            state.logged_items = [];
+            syncStateToDisk();
+            recalculateAndRefreshViews();
+        }
+    }
+</script>
+</body>
+</html>

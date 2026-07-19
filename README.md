@@ -1,6 +1,6 @@
 # Nutrition Tracker Pro
 
-A robust, lightweight Python desktop application built using `tkinter` to log, track, and analyze daily macronutrient intake. Engineered using the **MoSCoW prioritization framework** and a **Software Completeness Specification**, this application provides rapid standalone utility with zero external dependencies, robust data type validation, and an automated local storage persistence layer.
+A robust, lightweight Python desktop application built using `HTML5, CSS, and JavaSacript` to log, track, and analyze daily macronutrient intake. Engineered using the **MoSCoW prioritization framework** and a **Software Completeness Specification**, this application provides rapid standalone utility with zero external dependencies, robust data type validation, and an automated local storage persistence layer.
 
 ---
 
